@@ -27,7 +27,7 @@ class QAOA(PQC):
     qubo_cache: dict[tuple[float], qml.Hamiltonian] = field(default_factory=dict)
     dev: qml.Device | None = None
 
-    def create_qubo(self, problem: Problem, weights: list[float]) -> QUBO:
+    def create_qubo(self, problem: Problem, weights: list[float]) -> qml.Hamiltonian:
         if tuple(weights) not in self.qubo_cache:
             qubo = Converter.create_qubo(problem, weights)
             self.qubo_cache[tuple(weights)] = self._create_cost_operator(qubo)
@@ -78,7 +78,7 @@ class QAOA(PQC):
     ) -> Callable[[npt.NDArray[np.float64]], float]:
         cost_operator = self.create_qubo(problem, weights)
 
-        @qml.qnode(self.dev)
+        @qml.qnode(self.dev, diff_method="adjoint")
         def expval_circuit(params: npt.NDArray[np.float64]) -> float:
             self._circuit(problem, params, cost_operator)
             return cast(float, qml.expval(cost_operator))

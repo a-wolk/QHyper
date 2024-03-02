@@ -115,6 +115,7 @@ class Parser(ast.NodeVisitor):
 class MethodsForInequalities(Enum):  # todo penalization method
     SLACKS_LOG_2 = 0
     UNBALANCED_PENALIZATION = 1
+    QAOA_MIXER = 2
 
 
 class Operator(Enum):  # todo comparison operator
@@ -148,17 +149,14 @@ class Expression:
         return str(self.dictionary)
 
     def as_polynomial(self) -> str:
-        if self.polynomial is not None:
-            return str(self.polynomial)
-        else:
-            polynomial = str()
-            for k in self.dictionary:
-                if self.dictionary[k] < 0:
-                    polynomial += "- "
-                polynomial += str(abs(self.dictionary[k])) + "*"
-                polynomial += "*".join(k)
-                polynomial += " "
-            return polynomial.rstrip()
+        polynomial = str()
+        for k in self.dictionary:
+            if self.dictionary[k] < 0:
+                polynomial += "- "
+            polynomial += str(abs(self.dictionary[k])) + "*"
+            polynomial += "*".join(k)
+            polynomial += " "
+        return polynomial.rstrip()
 
 
 class Constraint:

@@ -293,7 +293,7 @@ class WorkflowSchedulingBinary(Problem):
                     Expression(expression),
                     self.workflow.deadline,
                     Operator.LE,
-                    MethodsForInequalities.UNBALANCED_PENALIZATION,
+                    MethodsForInequalities.QAOA_MIXER,
                 )
             )
 
