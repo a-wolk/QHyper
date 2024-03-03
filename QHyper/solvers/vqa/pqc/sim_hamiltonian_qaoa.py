@@ -33,6 +33,20 @@ class SimHamiltonianQAOA(QML_QAOA):
 
         return optimizer_instance.minimize_expval_func(
             self.get_expval_circuit(problem, list(hyper_args)), opt_args)
+    
+    def run_with_probs(
+        self,
+        problem: Problem,
+        opt_args: npt.NDArray[np.float64],
+        hyper_args: npt.NDArray[np.float64],
+    ) -> dict[str, float]:
+        self.dev = qml.device(
+            self.backend, wires=[str(x) for x in problem.variables] + [f"a{i}" for i in range(3 + 2 + len(problem.variables))])
+        probs = self.get_probs_func(problem, list(hyper_args))(opt_args.reshape(2, -1))
+        return {
+            format(result, "b").zfill(len(problem.variables)): float(prob)
+            for result, prob in enumerate(probs)
+        }
 
     def _circuit(self, problem: Problem, params: npt.NDArray[np.float64],
                  cost_operator: qml.Hamiltonian) -> None:
