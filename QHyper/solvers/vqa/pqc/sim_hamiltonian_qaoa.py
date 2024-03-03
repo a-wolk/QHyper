@@ -56,18 +56,25 @@ class SimHamiltonianQAOA(QML_QAOA):
                 for i in range(len(r_qbits)):
                     qml.ctrl(qml.RZ, control=control_qbits, control_values=[1]*len(control_qbits))(k * np.pi / (2**i), wires=r_qbits[i])
             return func
-        
-        def check_constraint(constraint):
+
+        def add(k):
+            def func(r_qbits):
+                for i in range(len(r_qbits)):
+                    qml.RZ(k * np.pi / (2**i), wires=r_qbits[i])
+            return func
+                
+        def check_constraint(constraint, C):
             def func(r_qbits, control_qbits):
                 qml.QFT(wires=r_qbits)
                 for vars, coeff in constraint.lhs.items():
                     if len(vars) == 0:
                         continue
-                    
-                    ctrl_add(coeff)(r_qbits, control_qbits)
+                            
+                    ctrl_add(coeff)(r_qbits, [control_qbits[int(str(x)[1])] for x in vars])
+                add(C)(r_qbits)
                 qml.adjoint(qml.QFT)(wires=r_qbits)
             return func
-        
+                
         def check_constraints(y_qbits, c_flag_qbits, ancilla_qbits):
             for constraint,flag_qbit in zip(problem.constraints, c_flag_qbits):
                 max_v = sum([coeff if coeff > 0 and len(vars) > 0 else 0 for vars, coeff in constraint.lhs.items()])
@@ -77,6 +84,7 @@ class SimHamiltonianQAOA(QML_QAOA):
                     max_v, min_v = -min_v, -max_v
                     C = -C
 
+                min_v -= 1
                 if C > 0:
                     vrange = (min_v, max_v + C)
                 else:
@@ -91,10 +99,10 @@ class SimHamiltonianQAOA(QML_QAOA):
                 r_len = max(neg_len, pos_len) + 1
                 r_qbits = ancilla_qbits[:r_len]
 
-                check_constraint(constraint)(r_qbits, y_qbits)
+                check_constraint(constraint, C-1)(r_qbits, y_qbits)
                 qml.ctrl(qml.PauliX, control=r_qbits[0], control_values=1)(flag_qbit)
-                qml.adjoint(check_constraint(constraint))(r_qbits, y_qbits)
-        
+                qml.adjoint(check_constraint(constraint, C-1))(r_qbits, y_qbits)
+                
         def validate(y_qbits, flag_qbit, ancilla_qbits) -> None:
             c_flag_qbits = ancilla_qbits[:len(problem.constraints)]
             ancilla_qbits = ancilla_qbits[len(problem.constraints):]
